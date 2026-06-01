@@ -40,3 +40,9 @@ output "app_url" {
   description = "Public HTTPS URL of the application."
   value       = "https://${aws_cloudfront_distribution.main.domain_name}"
 }
+
+# ------------------------------------------------------------------ WAF
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL (null if WAF disabled)."
+  value       = var.enable_waf ? aws_wafv2_web_acl.main[0].arn : null
+}

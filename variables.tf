@@ -101,3 +101,16 @@ variable "acm_certificate_arn" {
   type        = string
   default     = ""
 }
+
+# ------------------------------------------------------------------ WAF
+variable "enable_waf" {
+  description = "Whether to create and attach a WAFv2 Web ACL to the distribution."
+  type        = bool
+  default     = true
+}
+
+variable "waf_rate_limit" {
+  description = "Requests per 5-minute window per IP before the rate-based rule blocks (DDoS protection)."
+  type        = number
+  default     = 2000
+}
