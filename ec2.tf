@@ -85,10 +85,14 @@ resource "aws_instance" "backend" {
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.backend.id]
   key_name               = var.ssh_public_key == "" ? null : aws_key_pair.backend[0].key_name
+  iam_instance_profile   = aws_iam_instance_profile.backend.name
 
   user_data = templatefile("${path.module}/templates/user_data.sh.tftpl", {
-    repo_url = var.backend_repo_url
-    api_port = var.api_port
+    repo_url     = var.backend_repo_url
+    api_port     = var.api_port
+    model_bucket = var.enable_model_bucket ? var.model_bucket_name : ""
+    model_prefix = var.model_s3_prefix
+    region       = var.region
   })
 
   # Re-bootstrap when the user-data changes.

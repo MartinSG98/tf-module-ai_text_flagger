@@ -5,11 +5,11 @@ set -euxo pipefail
 # Bootstraps the AI Text Flagger FastAPI backend on Ubuntu 24.04.
 # Mirrors the manual steps in the backend README.
 #
-# NOTE: the trained BERT model is NOT in the git repo. After the instance is
-# up you must copy it into place, e.g.:
-#   scp -i key.pem -r output/model/final/* \
-#       ubuntu@<ip>:/home/ubuntu/ai_text_flagger/output/model/final/
-# then: sudo systemctl restart atf
+# The trained BERT model is NOT in the git repo (too large). When a model
+# bucket is provisioned, this script pulls it from S3 on boot via the instance
+# role, so a rebuilt instance self-provisions. Upload the model to the bucket
+# once with:
+#   aws s3 sync output/model/final/ s3://<model_bucket>/model/final/
 # --------------------------------------------------------------------------
 
 export DEBIAN_FRONTEND=noninteractive
@@ -32,8 +32,18 @@ sudo -u ubuntu "$APP_DIR/venv/bin/pip" install \
   fastapi uvicorn transformers python-dotenv python-docx pypdf \
   accelerate datasets safetensors huggingface-hub python-multipart
 
-# Ensure model directory exists for the manual model upload.
+# Ensure the model directory exists.
 sudo -u ubuntu mkdir -p "$APP_DIR/output/model/final"
+
+# Pull the trained model from S3 (if a model bucket was provisioned). The
+# instance role grants read access; run as root, then hand ownership back.
+MODEL_BUCKET="${model_bucket}"
+if [ -n "$MODEL_BUCKET" ]; then
+  snap install aws-cli --classic
+  /snap/bin/aws s3 sync "s3://$MODEL_BUCKET/${model_prefix}/" \
+    "$APP_DIR/output/model/final/" --region ${region}
+  chown -R ubuntu:ubuntu "$APP_DIR/output"
+fi
 
 # systemd service for auto-start on boot.
 cat >/etc/systemd/system/atf.service <<'UNIT'

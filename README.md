@@ -48,6 +48,9 @@ module "ai_text_flagger" {
 | Variable                      | Default          | Notes |
 |-------------------------------|------------------|-------|
 | `frontend_bucket_name`        | — (required)     | Globally unique S3 bucket name. |
+| `enable_model_bucket`         | `true`           | Create a model S3 bucket; backend auto-pulls it on boot. |
+| `model_bucket_name`           | `""`             | Globally unique S3 name; required when `enable_model_bucket`. |
+| `model_s3_prefix`             | `model/final`    | Key prefix synced into `output/model/final`. |
 | `region`                      | `eu-west-2`      | Primary region. |
 | `instance_type`               | `m7i-flex.large` | Backend EC2 size. |
 | `ssh_public_key`              | `""`             | Empty = no key pair (use SSM). |
@@ -62,10 +65,10 @@ See `variables.tf` for the full list.
 
 ## Key outputs
 
-`app_url`, `cloudfront_distribution_id`, `frontend_bucket`, `backend_public_ip`,
-`backend_instance_id`, `github_actions_role_arn`, `github_oidc_provider_arn`,
-and (when the legacy user is enabled) `cicd_access_key_id` /
-`cicd_secret_access_key`.
+`app_url`, `cloudfront_distribution_id`, `frontend_bucket`, `model_bucket`,
+`backend_public_ip`, `backend_instance_id`, `github_actions_role_arn`,
+`github_oidc_provider_arn`, and (when the legacy user is enabled)
+`cicd_access_key_id` / `cicd_secret_access_key`.
 
 ## Versioning
 
@@ -77,10 +80,26 @@ git tag v1.1.0 && git push --tags
 
 Then bump `?ref=` in the consuming stack.
 
+## Model delivery
+
+The trained BERT model is too large for git. When `enable_model_bucket = true`
+(default), the module creates a private S3 bucket and grants the backend instance
+role read access; the EC2 user-data runs `aws s3 sync` from that bucket into
+`output/model/final/` on boot, so a rebuilt/replaced instance self-provisions.
+
+Upload the model to the bucket once:
+
+```bash
+aws s3 sync output/model/final/ "s3://$(terraform output -raw model_bucket)/model/final/"
+```
+
+Set `enable_model_bucket = false` to skip this and manage the model yourself
+(e.g. manual `scp`).
+
 ## Notes
 
-- The trained BERT model is **not** provisioned — EC2 user-data installs deps and
-  the `atf` systemd service; copy the model in and restart (see the stack README).
+- The backend reaches the model via its IAM instance role (no keys), and supports
+  SSM Session Manager, so SSH is optional.
 - Uses the default VPC for a drop-in single-instance topology.
 - HTTPS uses the default `*.cloudfront.net` cert unless `cloudfront_aliases` +
   `acm_certificate_arn` (us-east-1) are supplied.

@@ -28,6 +28,25 @@ variable "frontend_bucket_name" {
   type        = string
 }
 
+# ------------------------------------------------------------------ Model / S3
+variable "enable_model_bucket" {
+  description = "Create an S3 bucket for the trained model and have the backend pull it from S3 on boot."
+  type        = bool
+  default     = true
+}
+
+variable "model_bucket_name" {
+  description = "Globally unique S3 bucket name for the trained model artifacts. Required when enable_model_bucket is true."
+  type        = string
+  default     = ""
+}
+
+variable "model_s3_prefix" {
+  description = "Key prefix within the model bucket where the model files live (synced into output/model/final)."
+  type        = string
+  default     = "model/final"
+}
+
 # ------------------------------------------------------------------ Backend / EC2
 variable "instance_type" {
   description = "EC2 instance type for the FastAPI backend."
