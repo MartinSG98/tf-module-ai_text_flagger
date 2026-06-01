@@ -82,3 +82,22 @@ variable "assign_elastic_ip" {
   type        = bool
   default     = true
 }
+
+# ------------------------------------------------------------------ CloudFront
+variable "cloudfront_price_class" {
+  description = "CloudFront price class (PriceClass_100, PriceClass_200, PriceClass_All)."
+  type        = string
+  default     = "PriceClass_100"
+}
+
+variable "cloudfront_aliases" {
+  description = "Optional custom domain names (CNAMEs) for the distribution. Requires acm_certificate_arn."
+  type        = list(string)
+  default     = []
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of an ACM certificate in us-east-1 for cloudfront_aliases. Empty uses the default *.cloudfront.net certificate."
+  type        = string
+  default     = ""
+}
