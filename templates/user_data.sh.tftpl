@@ -1,0 +1,58 @@
+#!/bin/bash
+set -euxo pipefail
+
+# --------------------------------------------------------------------------
+# Bootstraps the AI Text Flagger FastAPI backend on Ubuntu 24.04.
+# Mirrors the manual steps in the backend README.
+#
+# NOTE: the trained BERT model is NOT in the git repo. After the instance is
+# up you must copy it into place, e.g.:
+#   scp -i key.pem -r output/model/final/* \
+#       ubuntu@<ip>:/home/ubuntu/ai_text_flagger/output/model/final/
+# then: sudo systemctl restart atf
+# --------------------------------------------------------------------------
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y python3-pip python3-venv git
+
+APP_DIR=/home/ubuntu/ai_text_flagger
+
+sudo -u ubuntu git clone ${repo_url} "$APP_DIR"
+
+sudo -u ubuntu python3 -m venv "$APP_DIR/venv"
+
+# CPU-only PyTorch is sufficient for inference and much smaller.
+sudo -u ubuntu "$APP_DIR/venv/bin/pip" install --upgrade pip
+sudo -u ubuntu "$APP_DIR/venv/bin/pip" install \
+  torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+sudo -u ubuntu "$APP_DIR/venv/bin/pip" install \
+  fastapi uvicorn transformers python-dotenv python-docx pypdf \
+  accelerate datasets safetensors huggingface-hub python-multipart
+
+# Ensure model directory exists for the manual model upload.
+sudo -u ubuntu mkdir -p "$APP_DIR/output/model/final"
+
+# systemd service for auto-start on boot.
+cat >/etc/systemd/system/atf.service <<'UNIT'
+[Unit]
+Description=ATF Backend API
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ai_text_flagger
+Environment="PATH=/home/ubuntu/ai_text_flagger/venv/bin"
+EnvironmentFile=-/home/ubuntu/ai_text_flagger/.env
+ExecStart=/home/ubuntu/ai_text_flagger/venv/bin/python -m uvicorn src.api:app --host 0.0.0.0 --port ${api_port}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable atf
+systemctl start atf
