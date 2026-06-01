@@ -1,0 +1,13 @@
+# Terraform working files (a module repo shouldn't be applied directly, but
+# these can appear during local testing/validation).
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+
+# Example/local var files
+*.tfvars
+!*.tfvars.example
