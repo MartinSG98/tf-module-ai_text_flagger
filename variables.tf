@@ -21,3 +21,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ------------------------------------------------------------------ Frontend / S3
+variable "frontend_bucket_name" {
+  description = "Globally unique S3 bucket name for the static frontend (e.g. atf-frontend-ew2)."
+  type        = string
+}
