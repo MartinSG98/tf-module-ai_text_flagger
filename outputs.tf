@@ -9,6 +9,11 @@ output "frontend_bucket_arn" {
   value       = aws_s3_bucket.frontend.arn
 }
 
+output "model_bucket" {
+  description = "Name of the S3 bucket holding the trained model (null if disabled). Upload the model here."
+  value       = var.enable_model_bucket ? aws_s3_bucket.model[0].id : null
+}
+
 # ------------------------------------------------------------------ Backend
 output "backend_instance_id" {
   description = "EC2 instance ID of the backend."
