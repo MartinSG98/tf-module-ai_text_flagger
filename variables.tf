@@ -114,3 +114,56 @@ variable "waf_rate_limit" {
   type        = number
   default     = 2000
 }
+
+# ------------------------------------------------------------------ CI/CD: GitHub OIDC role
+variable "create_github_oidc_role" {
+  description = "Create an IAM role assumed by GitHub Actions via OIDC (preferred over static keys)."
+  type        = bool
+  default     = true
+}
+
+variable "create_github_oidc_provider" {
+  description = "Create the GitHub Actions OIDC provider. Set false (and pass github_oidc_provider_arn) if the account already has one."
+  type        = bool
+  default     = true
+}
+
+variable "github_oidc_provider_arn" {
+  description = "ARN of an existing GitHub Actions OIDC provider, used when create_github_oidc_provider is false."
+  type        = string
+  default     = ""
+}
+
+variable "github_repository" {
+  description = "GitHub repository allowed to assume the role, as \"owner/repo\" (e.g. MartinSG98/ai_text_flagger_ui)."
+  type        = string
+  default     = ""
+}
+
+variable "github_oidc_subjects" {
+  description = "Explicit OIDC subject patterns allowed to assume the role. Overrides the default (main branch of github_repository)."
+  type        = list(string)
+  default     = []
+}
+
+variable "github_oidc_thumbprints" {
+  description = "TLS thumbprints for the GitHub OIDC provider. IAM no longer enforces these for this provider, but the resource requires a value."
+  type        = list(string)
+  default = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+  ]
+}
+
+# ------------------------------------------------------------------ CI/CD: legacy access-key user
+variable "create_cicd_user" {
+  description = "Create a legacy IAM user with static access keys for CI/CD. Off by default; prefer the OIDC role."
+  type        = bool
+  default     = false
+}
+
+variable "cicd_user_name" {
+  description = "Name of the legacy IAM user used by GitHub Actions."
+  type        = string
+  default     = "atf-github-actions"
+}
